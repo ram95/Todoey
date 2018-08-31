@@ -8,7 +8,7 @@
 
 import Foundation
 
-class Item {
+class Item : NSObject, Codable {
     var tittle : String = ""
     var isDone :Bool = false
 }

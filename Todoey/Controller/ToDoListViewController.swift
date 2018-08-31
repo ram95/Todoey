@@ -10,11 +10,13 @@ import UIKit
 
 class ToDoListViewController: UITableViewController {
       var array = [Item]()
+     let dataFile = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("iteam.plist")
  //   let defaults = UserDefaults.standard
     override func viewDidLoad() {
         super.viewDidLoad()
-
-      //  array.app
+       
+        print(dataFile!)
+        loadItem()
        // tableView.register(UITableViewCell.self, forCellReuseIdentifier: "ToDoList")
 //        if let iteams = defaults.array(forKey: "ToDOListArray")  {
 //            array =  iteams as! [String]
@@ -40,7 +42,7 @@ class ToDoListViewController: UITableViewController {
         print(array[indexPath.row])
         array[indexPath.row].isDone = !array[indexPath.row].isDone
         tableView.deselectRow(at: indexPath, animated: true)
-        tableView.reloadData()
+        saveIems()
     }
     
     //////////////////////////////////////////////////////////////////////////////////////
@@ -55,9 +57,9 @@ class ToDoListViewController: UITableViewController {
             let item = Item()
             item.tittle = textField.text!
             self.array.append(item)
+            self.saveIems()
 //            self.array.append(textField.text!)
 //            self.defaults.set(self.array, forKey: "ToDOListArray")
-            self.tableView.reloadData()
         }
         alert.addTextField { (alertTextField) in
             alertTextField.placeholder = "Create New Item"
@@ -66,6 +68,25 @@ class ToDoListViewController: UITableViewController {
         alert.addAction(action)
         present(alert, animated:true, completion: nil)
     }
-    
+    func saveIems() {
+        let encoder = PropertyListEncoder ()
+        do {
+            let data = try encoder.encode(array)
+            try data.write(to: dataFile!)
+        } catch {
+            print("Error encoding Array \(error.localizedDescription)")
+        }
+        tableView.reloadData()
+    }
+    func loadItem() {
+        if  let data = try? Data(contentsOf: dataFile!){
+            let decoder = PropertyListDecoder ()
+            do{
+                array = try decoder.decode([Item].self, from:data)
+            } catch {
+                print("Error Loding Array \(error.localizedDescription)")
+            }
+        }
+    }
 }
 
