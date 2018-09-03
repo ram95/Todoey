@@ -7,12 +7,10 @@
 //
 
 import UIKit
-import CoreData
 import RealmSwift
-class CategoriesTableViewController: UITableViewController {
+import ChameleonFramework
+class CategoriesTableViewController: SwipeTableViewController {
     var CategoriesArr : Results<Category>?
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-
     let realm = try! Realm()
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,49 +28,38 @@ class CategoriesTableViewController: UITableViewController {
     
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        cell.textLabel?.text = CategoriesArr?[indexPath.row].name ?? "No Category Added Yet!"
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        if let currentCategory = CategoriesArr?[indexPath.row] {
+        cell.textLabel?.text = currentCategory.name
+        guard let color  = UIColor(hexString:currentCategory.colorHexValue ) else {fatalError("Error")}
+        cell.backgroundColor = color
+        cell.textLabel?.textColor = ContrastColorOf(color, returnFlat: true)
+        } else {
+            cell.textLabel?.text = "No Category Added Yet!"
+            cell.backgroundColor = UIColor(hexString: "1D9BFC")
+        }
         return cell
     }
+    
+    // MARK: - TableViewDelegate
+    
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-     //   tableView.deselectRow(at: indexPath, animated: true)
         performSegue(withIdentifier: "goToItems", sender: self)
     }
+    override func updateModal(at indexPath: IndexPath) {
+        if let category = CategoriesArr?[indexPath.row]{
+            do{
+                try self.realm.write {
+                    self.realm.delete(category)
+                }
+            } catch {
+                print("Error in Deleting Item: \(error.localizedDescription)")
+            }
+            
+        }
+    }
     
-    /*
-     // Override to support conditional editing of the table view.
-     override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
-     // Return false if you do not want the specified item to be editable.
-     return true
-     }
-     */
-    
-    /*
-     // Override to support editing the table view.
-     override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath) {
-     if editingStyle == .delete {
-     // Delete the row from the data source
-     tableView.deleteRows(at: [indexPath], with: .fade)
-     } else if editingStyle == .insert {
-     // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-     }
-     }
-     */
-    
-    /*
-     // Override to support rearranging the table view.
-     override func tableView(_ tableView: UITableView, moveRowAt fromIndexPath: IndexPath, to: IndexPath) {
-     
-     }
-     */
-    
-    /*
-     // Override to support conditional rearranging of the table view.
-     override func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
-     // Return false if you do not want the item to be re-orderable.
-     return true
-     }
-     */
+   
     
     
      // MARK: - Navigation
@@ -93,7 +80,7 @@ class CategoriesTableViewController: UITableViewController {
            // let category = Category(context: self.context)
             let newCategory = Category()
             newCategory.name = textField.text!
-            
+            newCategory.colorHexValue = UIColor.randomFlat.hexValue()
             self.save(category:newCategory)
             
         }
@@ -107,7 +94,7 @@ class CategoriesTableViewController: UITableViewController {
         
     }
     
-    //MARK: - COREDATA METHODS:
+    //MARK: - UpdateDatabase:
     
         func save(category: Category) {
         do{
@@ -120,10 +107,7 @@ class CategoriesTableViewController: UITableViewController {
         tableView.reloadData()
     }
     func loadCategory() {
-      
             CategoriesArr = realm.objects(Category.self)
-        
-        
         tableView.reloadData()
     }
 }
